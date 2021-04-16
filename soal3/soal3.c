@@ -8,83 +8,111 @@
 #include <syslog.h>
 #include <string.h>
 #include <time.h>
-
-void formatTime(char *buff);
-char *getCurrentDir();
-
-const int TIME_A = 40;
+#include <wait.h>
 
 int main() {
-  char now[20];
-  int check;
-  FILE *fp = NULL;
-  char *dir;
-  pid_t pid, sid;        // Variabel untuk menyimpan PID
-
-  pid = fork();     // Menyimpan PID dari Child Process
-
-  /* Keluar saat fork gagal
-  * (nilai variabel pid < 0) */
-  if (pid < 0) {
-    exit(EXIT_FAILURE);
-  }
-
-  /* Keluar saat fork berhasil
-  * (nilai variabel pid adalah PID dari child process) */
-  if (pid > 0) {
-    exit(EXIT_SUCCESS);
-  }
-
-  umask(0);
-
-  fp = fopen("log.txt", "w+");
-  dir = getCurrentDir();
-
-  sid = setsid();
-  if (sid < 0) {
-    exit(EXIT_FAILURE);
-  }
-
-  if ((chdir("/")) < 0) {
-    exit(EXIT_FAILURE);
-  }
-
-  close(STDIN_FILENO);
-  close(STDOUT_FILENO);
-  close(STDERR_FILENO);
-
-  while (1) {
-    now[0] = '\0';
-    formatTime(now);
+    pid_t pid;   // Variabel untuk menyimpan PID
     
-    int status = chdir(dir);
-    if(status < 0) {
-      fprintf(fp, "Gagal berpindah lokasi, kode error %d\n", status);
+    pid = fork();     // Menyimpan PID dari Child Process
+    /* Keluar saat fork gagal
+    * (nilai variabel pid < 0) */
+    if (pid < 0) {
+        exit(EXIT_FAILURE);
+    }
+    /* Keluar saat fork berhasil
+    * (nilai variabel pid adalah PID dari child process) */
+    if (pid > 0) {
+        exit(EXIT_SUCCESS);
+    }
+    umask(0);
+    pid_t sid;
+    sid = setsid();
+    int status;
+
+    if (sid < 0) {
+        exit(EXIT_FAILURE);
+    }
+    if ((chdir("/")) < 0) {
+    exit(EXIT_FAILURE);
     }
     
-    if(mkdir(now, 0777) == -1) {
-      fprintf(fp, "Gagal membuat direktori, nama file : %s, current dir : %s\n", now, dir);
-    } else {
-      fprintf(fp, "%s\n", now);
+    close(STDIN_FILENO);
+    close(STDOUT_FILENO);
+    close(STDERR_FILENO);
+    
+    while (1) {
+        // untuk melakukan formating date and time pada direktori yang akan dibuat 
+        time_t currTime;
+        struct tm *tmp;
+        char direktori[100];
+        time(&currTime);
+        tmp = localtime(&currTime);
+        strftime(direktori, sizeof(direktori), "%Y-%m-%d_%X", tmp);
+        
+        pid_t child_id1;
+        child_id1 = fork();
+        if (child_id1 < 0) {
+            exit(EXIT_FAILURE);
+        }
+        if (child_id1 == 0) {
+            
+            pid_t child_id2;
+            child_id2 = fork();
+            if (child_id2 < 0) {
+                exit(EXIT_FAILURE);
+            }
+            if (child_id2 == 0) {
+                
+                pid_t child_id3;
+                child_id3 = fork();
+                if (child_id3 < 0) {
+                    exit(EXIT_FAILURE);
+                }
+                if (child_id3 == 0) {
+                    // membuat direktori dengan format tertentu
+                    char *argv[] = {"mkdir", "-p", direktori, NULL};
+                    execv("/bin/mkdir", argv);
+                } else {
+                    while((wait(&status)) > 0);
+                    for (int i = 0; i < 10; i ++) {
+                        // pindah ke direktori tujuan
+                        chdir(direktori);
+                        // untuk melakukan formating date and time pada gambar yang akan didownload
+                        time_t currTime2;
+                        struct tm *tmp2;
+                        char gambar[100];
+                        time(&currTime2);
+                        tmp2 = localtime(&currTime2);
+                        strftime(gambar, sizeof(gambar), "%Y-%m-%d_%X", tmp2);
+                        strcat(gambar, ".jpg");
+                        // menyimpan url dan size gambar yang akan didownload
+                        char url[100000] = "https://picsum.photos/";
+                        char size[100];
+                        sprintf(size, "%ld", (currTime2 % 1000) + 50);
+                        strcat(url, size);
+                        
+                        pid_t child_id4;
+                        child_id4 = fork();
+                        if (child_id4 < 0) {
+                            exit(EXIT_FAILURE);
+                        }
+                        if (child_id4 == 0) {
+                            // downloading gambar  
+                            char *argv[] = {"wget", url, "-O", gambar, NULL};
+                            execv("/usr/bin/wget", argv);
+                        }
+                        sleep(5);
+                    }
+                    chdir("..");
+                }
+            } else {
+                while((wait(&status)) > 0);
+                
+            }
+        } else {
+            while((wait(&status)) > 0);
+            
+        }
+        sleep(40);
     }
-    fflush(fp);
-    sleep(TIME_A);
-  }
-
-  fclose(fp);
-
-  return 0;
-}
-
-char *getCurrentDir() {
-  return getcwd(NULL, 0);
-}
-
-time_t getTime() {
-    return time(NULL);
-}
-
-void formatTime(char *buff) {
-  time_t now = getTime();
-  strftime(buff, 20, "%Y-%m-%d_%H\:%M\:%S", localtime(&now));
 }
