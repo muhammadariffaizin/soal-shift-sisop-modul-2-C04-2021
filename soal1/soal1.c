@@ -9,6 +9,7 @@
 #include <string.h>
 #include <time.h>
 #include <wait.h>
+#include <dirent.h>
 
 time_t my_time;
 struct tm * timeinfo; 
@@ -25,11 +26,22 @@ int isDateCorrect(int isPrepare){
     return 0;
 }
 
+void execute(char **args){
+    int pid = fork();
+    int status;
+    if(pid == 0){
+        execvp(args[0], args);
+    }
+
+    while(wait(&status) > 0);
+}
+
 int main(){
-    char *folder_name[6] = {"/home/ariestahrt/Desktop/Sisop/Modul2/Musyik", "/home/ariestahrt/Desktop/Sisop/Modul2/Pyoto", "/home/ariestahrt/Desktop/Sisop/Modul2/Fylm", "/home/ariestahrt/Desktop/Sisop/Modul2/MUSIK", "/home/ariestahrt/Desktop/Sisop/Modul2/FOTO", "/home/ariestahrt/Desktop/Sisop/Modul2/FILM"};
-    char *move_cmd[3] = {"mv /home/ariestahrt/Desktop/Sisop/Modul2/MUSIK/* /home/ariestahrt/Desktop/Sisop/Modul2/Musyik", "mv /home/ariestahrt/Desktop/Sisop/Modul2/FOTO/* /home/ariestahrt/Desktop/Sisop/Modul2/Pyoto", "mv /home/ariestahrt/Desktop/Sisop/Modul2/FILM/* /home/ariestahrt/Desktop/Sisop/Modul2/Fylm"};
+    char *folder_name[6] = {"Musyik/", "Pyoto/", "Fylm/"};
+    char *folder_unzip[3] = {"MUSIK/", "FOTO/", "FILM/"};
     char *link_donlot[3] = {"https://drive.google.com/uc?id=1FsrAzb9B5ixooGUs0dGiBr-rC7TS9wTD&export=download", "https://drive.google.com/uc?id=1ZG8nRBRPquhYXq_sISdsVcXx5VdEgi-J&export=download", "https://drive.google.com/uc?id=1ktjGgDkL0nNpY-vT7rT7O6ZI47Ke9xcp&export=download"};
-    char *donlot_name[3] = {"/home/ariestahrt/Desktop/Sisop/Modul2/Musik_for_Stevany.zip","/home/ariestahrt/Desktop/Sisop/Modul2/Film_for_Stevany.zip","/home/ariestahrt/Desktop/Sisop/Modul2/Foto_for_Stevany.zip"};
+    char *donlot_name[3] = {"Musik_for_Stevany.zip","Film_for_Stevany.zip","Foto_for_Stevany.zip"};
+    char working_dir[] = "/home/ariestahrt/modul2/soal1/";
 
     int already_download=0, already_zip_lopyu=0;
 
@@ -43,7 +55,7 @@ int main(){
 
     sid=setsid();
     if(sid < 0) exit(EXIT_FAILURE);
-    if((chdir("/")) < 0) exit(EXIT_FAILURE);
+    if((chdir("/home/ariestahrt/modul2/soal1")) < 0) exit(EXIT_FAILURE);
 
     close(STDIN_FILENO);
     close(STDOUT_FILENO);
@@ -55,17 +67,8 @@ int main(){
         if(isDateCorrect(1) && already_download==0){ // e
             // a
             for(int i=0; i<3; i++){
-                if(fork() == 0){
-                    char *argv[] = {"mkdir", folder_name[i], NULL};
-                    execvp("mkdir", argv);
-                }
-            }
-
-            // waiting a to complete
-            for(int i=0; i<3; i++){
-                int status;
-                pid_t pid = wait(&status);
-                waitpid(pid, &status, WUNTRACED);
+                char *args[] = {"mkdir", folder_name[i], NULL};
+                execute(args);
             }
 
             // b
@@ -86,7 +89,7 @@ int main(){
             // c
             for(int i=0; i<3; i++){
                 if(fork() == 0){
-                    char *argv[] = {"unzip", "-q", donlot_name[i], "-d", "/home/ariestahrt/Desktop/Sisop/Modul2/", NULL};
+                    char *argv[] = {"unzip", "-q", donlot_name[i], "-d", "", NULL};
                     execv("/usr/bin/unzip", argv);
                 }
             }
@@ -100,55 +103,47 @@ int main(){
 
             // d
             for(int i=0; i<3; i++){
-                if(fork() == 0){
-                    char *cmdargs[] = { "bash", "-c", move_cmd[i], NULL };
-                    execvp(cmdargs[0], cmdargs);
-                }
-            }
+                DIR *dp;
+                struct dirent *ep;
+                char curr_dir[100]; sprintf(curr_dir, "%s%s", working_dir, folder_unzip[i]);
+                char move_dir[100]; sprintf(move_dir, "%s%s", working_dir, folder_name[i]);
+                dp = opendir(curr_dir);
 
-            // waiting d to complete
-            for(int i=0; i<3; i++){
-                int status;
-                pid_t pid = wait(&status);
-                waitpid(pid, &status, WUNTRACED);
+                if(dp != NULL){
+                    while((ep = readdir(dp))){
+                        if(strcmp(ep->d_name, ".") != 0 || strcmp(ep->d_name, "..") != 0){
+                            char file_to_move[355]; sprintf(file_to_move, "%s%s", curr_dir, ep->d_name);
+                            char file_move_to[355]; sprintf(file_move_to, "%s%s", move_dir, ep->d_name);
+                            char *args[] = {"mv", file_to_move, file_move_to, NULL};
+                            execute(args);
+                        }
+                    }
+                }
             }
 
             already_download=1;
         }
         
-        if(isDateCorrect(0) && already_zip_lopyu==0){ // f
-            // g
-            for(int i=0; i<1; i++){
-                if(fork() == 0){
-                    char *cmdargs[] = { "bash", "-c", "cd /home/ariestahrt/Desktop/Sisop/Modul2 && zip -r Lopyu_Stevany.zip Musyik/ Fylm/ Pyoto/", NULL };
-                    execvp(cmdargs[0], cmdargs);
-                }
+        if(isDateCorrect(0) && already_zip_lopyu==0){
+            // f
+
+            if(1){
+                char *args[] = { "zip", "-r", "Lopyu_Stevany", folder_name[0], folder_name[1], folder_name[2], NULL };
+                execute(args);
             }
 
-            // waiting to complete
-            for(int i=0; i<1; i++){
-                int status;
-                pid_t pid = wait(&status);
-                waitpid(pid, &status, WUNTRACED);
+            if(1){
+                char *args[] = {"rm", "-rf", folder_name[0], folder_name[1], folder_name[2], folder_unzip[0], folder_unzip[1], folder_unzip[2], NULL};
+                execute(args);
             }
 
-            for(int i=0; i<6; i++){
-                if(fork() == 0){
-                    char *argv[] = {"rm", "-rf", folder_name[i], NULL};
-                    execv("/usr/bin/rm", argv);
-                }
-            }
-
-            // waiting to complete
-            for(int i=0; i<6; i++){
-                int status;
-                pid_t pid = wait(&status);
-                waitpid(pid, &status, WUNTRACED);
-            }
             already_zip_lopyu=1;
+        }
+        
+        if(already_download && already_zip_lopyu){
+            exit(EXIT_FAILURE);
         }
         sleep(1);
     }
-
     return 0;
 }
