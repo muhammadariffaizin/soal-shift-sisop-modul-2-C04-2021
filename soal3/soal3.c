@@ -176,7 +176,7 @@ int main(int argc, char* argv[]){
 
     unsigned time_start = (unsigned) time(NULL);
 
-    printf("%s : PID : %d\n", getTimeNow(), pid);
+    printf("%s : PID : %d\n", getTimeNow(), master_pid);
     while(1){
         unsigned epoch_unix = (unsigned) time(NULL);
         if((epoch_unix-time_start) % 40 == 0){
