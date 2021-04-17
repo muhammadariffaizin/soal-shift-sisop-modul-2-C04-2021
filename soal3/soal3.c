@@ -143,6 +143,23 @@ void downloadImages(char *curr_dir){
 
 int main(int argc, char* argv[]){
     pid_t master_pid = getpid();
+
+    pid_t pid, sid;
+    pid = fork();
+
+    if(pid < 0) exit(EXIT_FAILURE);
+    if(pid > 0) exit(EXIT_SUCCESS);
+
+    umask(0);
+
+    sid=setsid();
+    if(sid < 0) exit(EXIT_FAILURE);
+    if((chdir("/home/ariestahrt/modul2/soal3")) < 0) exit(EXIT_FAILURE);
+
+    close(STDIN_FILENO);
+    close(STDOUT_FILENO);
+    close(STDERR_FILENO);
+
     if(argc == 2){
         if(!strcmp(argv[1], "-x")){
             // make killer
