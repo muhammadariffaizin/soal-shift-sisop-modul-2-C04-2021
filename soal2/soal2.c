@@ -42,16 +42,19 @@ int main(){
     char temp_path[300];
     char temp_path2[300];
     dp = opendir(path);
-
+    
     // File Pointer
     FILE *fptr;
 
     if (dp != NULL){
+
+        // Remove dir gak asing
+        dp = opendir(path);
         while ((ep = readdir (dp))) {
             char *ret = strstr(ep->d_name, ".jpg");
             if(ep->d_type == 4 && !ret && strcmp(ep->d_name, ".")!=0 && strcmp(ep->d_name, "..")!=0){
                 snprintf(temp_path, sizeof temp_path, "%s%s", path, ep->d_name);
-                printf("[x] REMOVE : %s\n", temp_path);
+                printf("[x] REMOVE : %s : ", temp_path);
                 if(fork() == 0){
                     char *cmdargs[] = {"rm", "-rf", (char *)temp_path, NULL};
                     execvp(cmdargs[0], cmdargs);
@@ -59,8 +62,14 @@ int main(){
 
                 pid = wait(&status);
                 waitpid(pid, &status, WUNTRACED);
-                printf("[x] REMOVE : %s : DONE~\n", temp_path);
-            }else if(ret){
+                printf("DONE~\n");
+            }
+        }
+
+        dp = opendir(path);
+        while ((ep = readdir (dp))) {
+            char *ret = strstr(ep->d_name, ".jpg");
+            if(ret){
                 char temp_master_file_name[100]; strcpy(temp_master_file_name, ep->d_name);
                 char *end_str;
                 char * fname = strtok_r(temp_master_file_name, "_", &end_str);
@@ -78,7 +87,7 @@ int main(){
                         if(counter==0){
                             strcpy(category, token);
                             snprintf(temp_path, sizeof temp_path, "%s%s", path, token);
-                            printf("\tMKDIR : %s\n", temp_path);
+                            printf("\tMKDIR : %s : ", temp_path);
                             
                             if(fork() == 0){
                                 char *cmdargs[] = {"mkdir", "-p", (char *)temp_path, NULL};
@@ -87,7 +96,7 @@ int main(){
 
                             pid = wait(&status);
                             waitpid(pid, &status, WUNTRACED);
-                            printf("\tMKDIR : %s : DONE~\n", temp_path);
+                            printf("DONE~\n");
                         }else if(counter==1){
                             strcpy(pet_name, token);
 
@@ -100,7 +109,7 @@ int main(){
                             snprintf(temp_path, sizeof temp_path, "%s%s", path, ep->d_name);
                             snprintf(temp_path2, sizeof temp_path2, "%s%s/%s.jpg", path,category,token);
                             
-                            printf("\tCP %s %s\n", temp_path, temp_path2);
+                            printf("\tCP %s %s", temp_path, temp_path2);
                             
                             if(fork() == 0){
                                 char *cmdargs[] = {"cp", temp_path, temp_path2, NULL};
@@ -109,7 +118,7 @@ int main(){
 
                             pid = wait(&status);
                             waitpid(pid, &status, WUNTRACED);
-                            printf("\tCP %s %s\n", temp_path, temp_path2);
+                            printf(" DONE~\n");
                         }else if(counter==2){
                             char temp_token[100]; strcpy(temp_token, token);
                             char * is_multi = strstr(ep->d_name, ".jpg");
@@ -140,7 +149,7 @@ int main(){
 
                 snprintf(temp_path, sizeof temp_path, "%s%s", path, ep->d_name);
 
-                printf("\tRM %s\n", temp_path);
+                printf("\tRM %s : ", temp_path);
                 
                 if(fork() == 0){
                     char *cmdargs[] = {"rm", temp_path, NULL};
@@ -149,7 +158,7 @@ int main(){
 
                 pid = wait(&status);
                 waitpid(pid, &status, WUNTRACED);
-                printf("\tRM %s\n", temp_path);
+                printf("DONE~\n");
             }
         }
 

@@ -37,7 +37,7 @@ void execute(char **args){
 }
 
 int main(){
-    char *folder_name[6] = {"Musyik/", "Pyoto/", "Fylm/"};
+    char *folder_name[3] = {"Musyik/", "Pyoto/", "Fylm/"};
     char *folder_unzip[3] = {"MUSIK/", "FOTO/", "FILM/"};
     char *link_donlot[3] = {"https://drive.google.com/uc?id=1FsrAzb9B5ixooGUs0dGiBr-rC7TS9wTD&export=download", "https://drive.google.com/uc?id=1ZG8nRBRPquhYXq_sISdsVcXx5VdEgi-J&export=download", "https://drive.google.com/uc?id=1ktjGgDkL0nNpY-vT7rT7O6ZI47Ke9xcp&export=download"};
     char *donlot_name[3] = {"Musik_for_Stevany.zip","Film_for_Stevany.zip","Foto_for_Stevany.zip"};
