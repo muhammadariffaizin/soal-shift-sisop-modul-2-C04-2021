@@ -1,6 +1,12 @@
-# soal-shift-sisop-modul-2-C04-2021
+# Kelompok C04 Sistem Operasi C
+- I Kadek Agus Ariesta Putra 05111940000105
+- Muhammad Arif Faizin 05111940000060
+- Ahmad Lamaul Farid 05111940000134
 
-## Penjelasan Soal Nomor 1
+# Soal
+Link soal [Soal Shift 2](https://docs.google.com/document/d/121ZqwL7KXiKy3YpQgP6INuYlb4969WOj1GlZ9umO65w/edit)
+
+## Soal 1
 
 Pada soal no 1 kita diminta untuk membuat program c dengan ketentuan sebagai berikut: 
 * Membuat folder masing-masing sesuai extensi. folder-foldernya adalah Musyik untuk mp3, Fylm untuk mp4, dan Pyoto untuk jpg. 
@@ -160,3 +166,333 @@ Kami membuat program dengan menggunakan library `dirent.h` untuk melihat file/is
             }
 ```
 Tujuan pembuatan program menggunakan library `dirent.h` ini agar memudahkan dalam proses pemindahan isi dari suatu direktori ke direktori yang diminta oleh soal. Kemudian jika date dan time sudah 09 April pukul 22.22 WIB dan file Lopyu_Stevany.zip belum ada, maka folder yang telah dibuat (Musyik, Fylm, Pyoto) akan di-zip ke dalam file yang bernama Lopyu_Stevany. Lalu file atau folder selain Lopyu_Stevany.zip akan di delete. Setelah itu, jika proses yang diminta telah berjalan semua maka proses akan berhenti. 
+## Soal 2
+## Soal 3
+Pada soal no 3, diminta untuk membuat program C dengan ketentuan sebagai berikut : 
+* Membuat direktori dengan format nama [YYYY-MM-DD_HH:ii:ss] setiap 40 detik
+* Di setiap direktori yang dibuat, diisi dengan 10 gambar yang didownload dari [https://picsum.photos](https://picsum.photos) dengan format nama [YYYY-MM-DD_HH:ii:ss] dengan bentuk persegi dengan ukuran (n%1000) + 50 pixel dimana n adalah detik Epoch linux
+* Ketika telah selesai mendownload, membuat file "status.txt" diisikan dengan pesan "Download Success" namun telah dienkripsi menggunakan Caesar Chiper dengan shift 5
+* Membuat program killer dengan bash, yang akan menterminate proses yang berjalan, sekaligus menterminate dirinya sendiri setelah berjalan
+* Program yang dapat dijalankan dalam 2 mode, dengan masing-masing parameter
+    * `-z` akan menjalankan killer, dan menghentikan semua prosesnya
+    * `-x` akan memberhentikan program utama, namun proses daemon tetap berjalan hingga selesai, kemudian semua folder yang dibuat akan dikompress dengan zip dan semua direktori yang telah dibuat di delete
+
+Dari beberapa ketentuan tersebut, maka program sebaiknya dijalankan menggunakan daemon, sebagai berikut :
+
+```c
+int main(int argc, char* argv[]){    
+    pid_t pid, sid;
+    pid = fork();
+
+    if(pid < 0) exit(EXIT_FAILURE);
+    if(pid > 0) exit(EXIT_SUCCESS);
+
+    umask(0);
+
+    sid=setsid();
+    if(sid < 0) exit(EXIT_FAILURE);
+    if((chdir("/home/ariestahrt/modul2/soal3")) < 0) exit(EXIT_FAILURE);
+
+    close(STDIN_FILENO);
+    close(STDOUT_FILENO);
+    close(STDERR_FILENO);
+
+    ...
+    (Deklarasi variabel)
+    
+    while(1){
+        ...
+        (Kode utama)
+
+        sleep(1);
+    }
+}
+```
+
+Untuk mempermudah menjawab soal, terdapat beberapa fungsi yang mendukung jalannya program agar lebih mudah dalam pengimplementasiannya. Diantaranya sebagai berikut :
+
+### Fungsi `void execute(char **args)`
+Fungsi ini mempermudah pengeksekusian command dengan menggunakan `execvp()` dengan parameter double pointer dari argumen. Fungsi ini akan melakukan `fork()` baru untuk setiap perintah yang akan dijalankan menggunakan fungsi ini. Kemudian menunggu untuk semua child selesai dengan menggunakan fungsi `wait()`, sehingga perintah akan dipastikan telah selesai ketika dilanjutkan ke proses selanjutnya.
+```c
+void execute(char **args){
+    int pid = fork();
+    int status;
+    if(pid == 0){
+        execvp(args[0], args);
+    }
+
+    while(wait(&status) > 0);
+}
+```
+### Fungsi `char* convertToCharPtr(char *str)`
+Fungsi ini mengubah char menjadi pointer char agar char menjadi dinamis
+```c
+char* convertToCharPtr(char *str){
+    int len=strlen(str);
+    char* ret = malloc((len+1) * sizeof(char));
+    for(int i=0; i<len; i++){
+        ret[i] = str[i];
+    }
+    ret[len] = '\0';
+    return ret;
+}
+```
+### Fungsi `char* getTimeNow()`
+Fungsi ini memecah timestamp agar sesuai dengan format , yakni `[YYYY-mm-dd_HH:ii:ss]` dimana `YYYY` adalah Tahun, `mm` adalah bulan, `dd` adalah hari, `HH` adalah jam, `ii` adalah menit, dan `ss` adalah detik.
+```c
+char* getTimeNow(){
+    time (&my_time);
+    timeinfo = localtime (&my_time);
+
+    char day[10], month[10], year[10], hour[10], minute[10], second[10];
+
+    sprintf(day, "%d", timeinfo->tm_mday);
+    if(timeinfo->tm_mday < 10) sprintf(day, "0%d", timeinfo->tm_mday);
+
+    sprintf(month, "%d", timeinfo->tm_mon+1);
+    if(timeinfo->tm_mon+1 < 10) sprintf(month, "0%d", timeinfo->tm_mon+1);
+
+    sprintf(year, "%d", timeinfo->tm_year+1900);
+
+    sprintf(hour, "%d", timeinfo->tm_hour);
+    if(timeinfo->tm_hour < 10) sprintf(hour, "0%d", timeinfo->tm_hour);
+
+    sprintf(minute, "%d", timeinfo->tm_min);
+    if(timeinfo->tm_min < 10) sprintf(minute, "0%d", timeinfo->tm_min);
+
+    sprintf(second, "%d", timeinfo->tm_sec);
+    if(timeinfo->tm_sec < 10) sprintf(second, "0%d", timeinfo->tm_sec);
+
+    char datetime_now[100];
+    sprintf(datetime_now, "%s-%s-%s_%s:%s:%s", year, month, day, hour, minute, second);
+    char* ret=convertToCharPtr(datetime_now);
+    return ret;
+}
+```
+### Fungsi `void logs(char **msg)`
+Fungsi ini membantu untuk logging program 
+```c
+void logs(char **msg){
+    time (&my_time);
+    timeinfo = localtime (&my_time);
+
+    char *timeNow = getTimeNow();
+    printf("%s : ", timeNow);
+
+    int i=0;
+    while(msg[i] != NULL){
+        printf("%s ", msg[i]);
+        i++;
+    }
+    printf("\n");
+}
+```
+### Fungsi `char *chaesarEncrypt(char* str, int shift)`
+Fungsi ini merupakan penerapan dari Caesar Chiper, dimana fungsi ini memiliki dua parameter, yaitu pointer char yang akan dienkripsi dan jumlah shift yang akan digeser.
+```c
+char *chaesarEncrypt(char* str, int shift){
+    int len = strlen(str);
+    char *ret = malloc((len+1) * sizeof(char));
+
+    for(int i=0; i<len; i++){
+        if(str[i] >= 97 && str[i] <= 122){
+            int asciinum = str[i] - 'a';
+            asciinum = 97 + (asciinum+shift)%26;
+            ret[i] = asciinum;
+        }else if (str[i] >= 65 && str[i] <= 90){
+            int asciinum = str[i] - 'A';
+            asciinum = 65 + (asciinum+shift)%26;
+            ret[i] = asciinum;
+        }else{
+            ret[i] = str[i];
+        }
+    }
+    ret[len] = '\0';
+
+    return ret;
+}
+```
+
+### A
+Implementasi lengkap soal 3 bagian A di fungsi `main()` sebagai berikut :
+
+```c
+int main(int argc, char* argv[]){
+    ...
+
+    unsigned time_start = (unsigned) time(NULL);
+
+    printf("%s : PID : %d\n", getTimeNow(), master_pid);
+    while(1){
+        unsigned epoch_unix = (unsigned) time(NULL);
+        if((epoch_unix-time_start) % 40 == 0){
+            char *curr_dir = getTimeNow();
+            char* msg[] = {"Running new download task working dir: ", curr_dir, NULL}; logs(msg);
+            createDir(curr_dir);
+
+            ...
+        }
+        sleep(1);
+    }
+}
+```
+Dalam loop child daemon, program memanggil fungsi `createDir()` untuk membuat direktori baru.
+
+Untuk membuat sebuah direktori tanpa menggunakan `system()` dan `mkdir()`, bisa menggunakan fungsi `mkdir` dari `/bin/mkdir`. Untuk itu, perlu memanggil fungsi `execute()` untuk menjalankan fungsi `mkdir` dengan membuat child baru. 
+
+Berikut fungsi `createDir()` 
+
+```c
+void createDir(char *dir){
+    char *args[] = {"mkdir", "-p", dir, NULL}; execute(args);
+}
+```
+parameter `-p` digunakan agar direktori yang dibuat akan selalu memiliki parent, jika telah memiliki parent maka tidak akan error, tetapi jika tidak maka perintah akan membuat direktori parent terlebih dahulu untuk direktori yang baru.
+
+Pada fungsi `main()` terdapat penggunaan fungsi `getTimeNow()` untuk mendapatkan *timestamp*. Kemudian *timestamp* tersebut digunakan sebagai nama folder yang akan dibuat. 
+
+Selain itu, terdapat penggunaan fungsi `logs()` agar proses yang berjalan dapat ditampilkan pada output.
+
+Semua perintah tersebut akan berjalan setiap 40 detik, dengan menggunakan kondisi `if else` dari loop while. 
+```c
+if((epoch_unix-time_start) % 40 == 0){
+    ...
+}
+```
+
+### B
+Implementasi lengkap soal 3 bagian B di fungsi `main()` sebagai berikut :
+```c
+int main(int argc, char* argv[]){
+    ...
+
+    while(1){
+        ...
+        if((epoch_unix-time_start) % 40 == 0){
+            ...
+
+            if(fork() == 0){
+                downloadImages(curr_dir);
+                exit(EXIT_SUCCESS);
+            }
+        }
+        sleep(1);
+    }
+}
+```
+Setelah proses pembuatan direktori selesai, maka perlu untuk membuat child baru agar proses mengunduh gambar dapat berjalan secara terpisah dengan daemon utama. Pada implementasi tersebut terdapat penggunaan fungsi `downloadImages()` untuk menjalankan tugas mengunduh gambar. 
+
+Berikut fungsi `downloadImages()`
+```c
+void downloadImages(char *curr_dir){
+    for(int i=1; i<=10; i++){
+        char progress[100]; sprintf(progress, "(%d/10)", i);
+        char *msg[] = {"Downloading to dir :", curr_dir, progress, NULL}; logs(msg);
+        if(fork() == 0){
+            char *timestamp = getTimeNow();
+            unsigned epoch_unix = (unsigned)time(NULL);            
+            char link[100]; sprintf(link, "%s/%d", "https://picsum.photos", (epoch_unix%1000)+50);
+            char savefile[150]; sprintf(savefile, "/home/ariestahrt/modul2/soal3/%s/%s.jpeg", curr_dir, timestamp);
+            char *args[] = {"wget", "-q", link, "-O", savefile, NULL};
+            execvp(args[0], args);
+        }
+        sleep(5);
+    }
+
+    ...
+}
+```
+Fungsi `downloadImages()` akan mengulangi proses mengunduh sebanyak 10 kali sesuai dengan soal, dimana di setiap *loop* akan berhenti sejenak selama 5 detik menggunakan fungsi `sleep(5)`.
+
+Untuk mengunduh gambar dari url yang telah disediakan, di setiap *loop* terdapat penggunaan fungsi `execute()` untuk mengeksekusi perintah `wget` dengan parameter `-q` agar berjalan tanpa perlu output log, link gambar(https://picsum.photos/) dan parameter `-O` untuk path tujuan file yang akan disimpan. 
+
+Selain itu, untuk mendapatkan gambar yang sesuai kriteria "memiliki bentuk persegi dan berukuran (n%1000) + 50 piksel", bisa dilakukan dengan menggunakan *endpoint* dari link tersebut, agar gambar yang diunduh sesuai. Lalu file yang disimpan juga harus memenuhi format nama [YYY-mm-dd_HH:ii:ss], dengan cara menggunakan bantuan fungsi `getTimeNow()` untuk mendapatkan *timestamp*.
+
+Selain itu, juga terdapat penggunaan fungsi `logs()` agar output dapat ditampilkan kepada pengguna.
+
+### C
+Implementasi lengkap soal 3 bagian C terdapat pada fungsi `dowloadImages()` sebagai berikut :
+```c
+void downloadImages(char *curr_dir){
+    ...
+    
+    char file_path[150]; sprintf(file_path, "/home/ariestahrt/modul2/soal3/%s/status.txt", curr_dir);
+    FILE *fptr = fopen(file_path, "a");
+    fprintf(fptr, "%s", chaesarEncrypt("Download Success", 5));
+    fclose(fptr);
+
+    ...
+}
+```
+
+Setelah proses mengunduh selesai, tugas selanjutnya yaitu membuat pesan "Download Success" yang telah terenkripsi menggunakan Caesar Cipher dengan shift 5, dalam sebuah file dengan nama "status.txt". Untuk itu, perlu menggunakan bantuan fungsi `chaesarEncrypt()` untuk mengenkripsi pesan sukses tersebut.
+
+### D dan E
+Implementasi lengkap soal 3 bagian D dan E di fungsi `main` sebagai berikut :
+```c
+int main(int argc, char* argv[]){
+    ...
+
+    pid_t master_pid = getpid();
+    if(argc == 2){
+        if(!strcmp(argv[1], "-x")){
+            // make killer
+            FILE *fptr = fopen("/home/ariestahrt/modul2/soal3/killer.sh", "w");
+            fprintf(fptr, "#!/bin/bash\nkill -9 %d\n", master_pid);
+            fclose(fptr);
+        }else if(!strcmp(argv[1], "-z")){
+            // make killer
+            FILE *fptr = fopen("/home/ariestahrt/modul2/soal3/killer.sh", "w");
+            fprintf(fptr, "#!/bin/bash\npkill -f \"%s\"\n", argv[0]);
+            fclose(fptr);
+        }
+    }
+
+    ...
+    while(1){
+        ...
+    }
+}
+```
+
+Karena program tersebut memiliki dua opsi parameter, maka perlu untuk mengambil argumen dari `argv[]` sehingga program berjalan sesuai perintah.
+
+Sedangkan untuk argumen `-z`, maka program akan melakukan *generate* killer dengan menggunakan fungsi `pkill`. Fungsi `pkill` akan melakukan *terminate* program dengan nama yang sesuai, sedangkan parameter `-f` akan melakukan *terminate* program berjalan dengan mencocokkannya berdasarkan *process name*-nya. Sehingga apabila memanggil `pkill -f` dengan argumen nama executable output dari program, maka semua proses yang berhubungan akan ikut berhenti.
+
+Untuk argumen `-x`, maka program akan melakukan *generate* killer dengan menggunakan fungsi `kill` dengan parameter `-9` untuk *terminate process* dengan signal SIGKILL, dan `pid` dari proses utama. Sehingga ketika proses utama di-*terminate*, maka seluruh *child* proses akan tetap berjalan hingga selesai untuk selanjutnya melakukan tugas lainnya.
+
+Tugas selanjutnya adalah melakukan kompresi `zip` dari folder dan file yang telah dijalankan pada bagian sebelumnya. Implementasinya sebagai berikut :
+```c
+void downloadImages(char *curr_dir){
+    ...
+
+    char folder_path[150]; sprintf(folder_path, "%s/", curr_dir);
+    char zip_path[150]; sprintf(zip_path, "%s.zip", curr_dir);
+    
+    if(1){
+        char *msg[] = {"Ziping dir", folder_path, "to", zip_path, NULL}; logs(msg);
+        char *args[] = {"zip", "-qr", zip_path, folder_path, NULL}; execute(args);
+        char *msg2[] = {"Ziping dir", folder_path, "to", zip_path, "DONE~", NULL}; logs(msg2);
+    }
+
+    ...
+}
+```
+Proses kompresi berjalan menggunakan fungsi `zip` dengan parameter `-qr` untuk menonaktifkan output dari proses kompresi, sekaligus melakukannya secara rekursif untuk seluruh file di dalamnya. Kemudian parameter untuk nama output zip dan juga parameter untuk lokasi direktori tujuan.
+
+Kemudian setelah proses `zip` selesai, maka direktori yang telah dibuat pada program ini akan dihapus. Implementasinya sebagai berikut :
+```c
+void downloadImages(char *curr_dir){
+    ...
+
+    if(1){
+        char *msg[] = {"Delete dir", folder_path, NULL}; logs(msg);
+        char *args[] = {"rm", "-rf", folder_path, NULL}; execute(args);
+        char *msg2[] = {"Delete dir", folder_path, "DONE~", NULL}; logs(msg2);
+    }
+}
+```
+
+Proses penghapusan direktori dan file menggunakan fungsi `rm` dengan parameter `-rf` agar proses penghapusan berjalan secara paksa untuk seluruh file dan direktori, sekaligus melakukannya secara rekursif pada direktori tersebut.
+
+Kedua proses tersebut juga diiringi dengan penggunaan fungsi `logs()` agar hasil output dapat ditampilkan kepada pengguna.
