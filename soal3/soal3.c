@@ -13,6 +13,11 @@
 
 time_t my_time;
 struct tm * timeinfo;
+char *base_dir;
+
+char *getCurrentDir() {
+  return getcwd(NULL, 0);
+}
 
 void execute(char **args){
     int pid = fork();
@@ -112,14 +117,14 @@ void downloadImages(char *curr_dir){
             char *timestamp = getTimeNow();
             unsigned epoch_unix = (unsigned)time(NULL);            
             char link[100]; sprintf(link, "%s/%d", "https://picsum.photos", (epoch_unix%1000)+50);
-            char savefile[150]; sprintf(savefile, "/home/ariestahrt/modul2/soal3/%s/%s.jpeg", curr_dir, timestamp);
+            char savefile[150]; sprintf(savefile, "%s/%s/%s.jpeg", base_dir, curr_dir, timestamp);
             char *args[] = {"wget", "-q", link, "-O", savefile, NULL};
             execvp(args[0], args);
         }
         sleep(5);
     }
 
-    char file_path[150]; sprintf(file_path, "/home/ariestahrt/modul2/soal3/%s/status.txt", curr_dir);
+    char file_path[150]; sprintf(file_path, "%s/%s/status.txt", base_dir, curr_dir);
     FILE *fptr = fopen(file_path, "a");
     fprintf(fptr, "%s", chaesarEncrypt("Download Success", 5));
     fclose(fptr);
@@ -150,10 +155,11 @@ int main(int argc, char* argv[]){
     if(pid > 0) exit(EXIT_SUCCESS);
 
     umask(0);
+    base_dir = getCurrentDir();
 
     sid=setsid();
     if(sid < 0) exit(EXIT_FAILURE);
-    if((chdir("/home/ariestahrt/modul2/soal3")) < 0) exit(EXIT_FAILURE);
+    if((chdir(base_dir)) < 0) exit(EXIT_FAILURE);
 
     close(STDIN_FILENO);
     close(STDOUT_FILENO);
@@ -163,12 +169,16 @@ int main(int argc, char* argv[]){
     if(argc == 2){
         if(!strcmp(argv[1], "-x")){
             // make killer
-            FILE *fptr = fopen("/home/ariestahrt/modul2/soal3/killer.sh", "w");
+            char file_path[200];
+            sprintf(file_path, "%s/killer.sh", base_dir);
+            FILE *fptr = fopen(file_path, "w");
             fprintf(fptr, "#!/bin/bash\nkill -9 %d\n", master_pid);
             fclose(fptr);
         }else if(!strcmp(argv[1], "-z")){
             // make killer
-            FILE *fptr = fopen("/home/ariestahrt/modul2/soal3/killer.sh", "w");
+            char file_path[200];
+            sprintf(file_path, "%s/killer.sh", base_dir);
+            FILE *fptr = fopen(file_path, "w");
             fprintf(fptr, "#!/bin/bash\npkill -f \"%s\"\n", argv[0]);
             fclose(fptr);
         }

@@ -11,14 +11,20 @@
 #include <wait.h>
 #include <dirent.h>
 
+char *getCurrentDir() {
+  return getcwd(NULL, 0);
+}
 
 int main(){
     int status;
     pid_t pid;
+    char *base_dir = getCurrentDir();
 
     // a-0
     if(fork() == 0){
-        char *cmdargs[] = {"mkdir", "-p", "/home/ariestahrt/modul2/petshop/", NULL};
+        char folder_path[200];
+        sprintf(folder_path, "%s/petshop/", base_dir);
+        char *cmdargs[] = {"mkdir", "-p", folder_path, NULL};
         execvp(cmdargs[0], cmdargs);
     }
 
@@ -27,7 +33,11 @@ int main(){
 
     // a-1
     if(fork() == 0){
-        char *cmdargs[] = {"unzip", "-q", "/home/ariestahrt/modul2/pets.zip", "-d", "/home/ariestahrt/modul2/petshop/", NULL};
+        char folder_path[200];
+        char zip_path[200];
+        sprintf(folder_path, "%s/petshop/", base_dir);
+        sprintf(zip_path, "%s/pets.zip", base_dir);
+        char *cmdargs[] = {"unzip", "-q", zip_path, "-d", folder_path, NULL};
         execvp(cmdargs[0], cmdargs);
     }
 
@@ -38,7 +48,8 @@ int main(){
 
     DIR *dp;
     struct dirent *ep;
-    char path[] = "/home/ariestahrt/modul2/petshop/";
+    char path[200];
+    sprintf(path, "%s/petshop/", base_dir);
     char temp_path[300];
     char temp_path2[300];
     dp = opendir(path);

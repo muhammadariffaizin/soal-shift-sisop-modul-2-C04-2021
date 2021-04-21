@@ -36,12 +36,16 @@ void execute(char **args){
     while(wait(&status) > 0);
 }
 
+char *getCurrentDir() {
+  return getcwd(NULL, 0);
+}
+
 int main(){
     char *folder_name[3] = {"Musyik/", "Pyoto/", "Fylm/"};
     char *folder_unzip[3] = {"MUSIK/", "FOTO/", "FILM/"};
     char *link_donlot[3] = {"https://drive.google.com/uc?id=1FsrAzb9B5ixooGUs0dGiBr-rC7TS9wTD&export=download", "https://drive.google.com/uc?id=1ZG8nRBRPquhYXq_sISdsVcXx5VdEgi-J&export=download", "https://drive.google.com/uc?id=1ktjGgDkL0nNpY-vT7rT7O6ZI47Ke9xcp&export=download"};
     char *donlot_name[3] = {"Musik_for_Stevany.zip","Film_for_Stevany.zip","Foto_for_Stevany.zip"};
-    char working_dir[] = "/home/ariestahrt/modul2/soal1/";
+    char *base_dir = getCurrentDir();
 
     int already_download=0, already_zip_lopyu=0;
 
@@ -55,7 +59,7 @@ int main(){
 
     sid=setsid();
     if(sid < 0) exit(EXIT_FAILURE);
-    if((chdir("/home/ariestahrt/modul2/soal1")) < 0) exit(EXIT_FAILURE);
+    if((chdir(base_dir)) < 0) exit(EXIT_FAILURE);
 
     close(STDIN_FILENO);
     close(STDOUT_FILENO);
@@ -105,8 +109,8 @@ int main(){
             for(int i=0; i<3; i++){
                 DIR *dp;
                 struct dirent *ep;
-                char curr_dir[100]; sprintf(curr_dir, "%s%s", working_dir, folder_unzip[i]);
-                char move_dir[100]; sprintf(move_dir, "%s%s", working_dir, folder_name[i]);
+                char curr_dir[100]; sprintf(curr_dir, "%s%s", base_dir, folder_unzip[i]);
+                char move_dir[100]; sprintf(move_dir, "%s%s", base_dir, folder_name[i]);
                 dp = opendir(curr_dir);
 
                 if(dp != NULL){
