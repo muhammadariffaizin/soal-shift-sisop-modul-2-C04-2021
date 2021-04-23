@@ -167,6 +167,151 @@ Kami membuat program dengan menggunakan library `dirent.h` untuk melihat file/is
 ```
 Tujuan pembuatan program menggunakan library `dirent.h` ini agar memudahkan dalam proses pemindahan isi dari suatu direktori ke direktori yang diminta oleh soal. Kemudian jika date dan time sudah 09 April pukul 22.22 WIB dan file Lopyu_Stevany.zip belum ada, maka folder yang telah dibuat (Musyik, Fylm, Pyoto) akan di-zip ke dalam file yang bernama Lopyu_Stevany. Lalu file atau folder selain Lopyu_Stevany.zip akan di delete. Setelah itu, jika proses yang diminta telah berjalan semua maka proses akan berhenti. 
 ## Soal 2
+
+Pada soal no 2 kita diminta untuk membuat program c dengan ketentuan sebagai berikut: 
+* Mengekstrak file petshop.zip ke “/home/[user]/modul2/petshop” lalu menghapus file/folder yang tidak diperlukan (selain .jpg). 
+* Membuat folder-folder berdasarkan kategori hewan. 
+* Memindahkan foto ke ke folder yang kita buat tadi sesuai kategorinya dan mengganti namanya dengan [nama hewan tersebut].jpg.
+* Karena satu foto bisa lebih dari satu hewan dan itu ditandai pada judul dengan pemisah '_', maka buat program agar mendeteksi hal tersebut.
+* Setiap folder berisi keterangan.txt yang berisi data hewan yang dimasukkan dengan format seperti pada soal.
+
+Dari ketentuan program tersebut maka implementasi program yang kami buat dapat terbagi dalam potongan program sebagai berikut:
+
+- Membuat direktori petshop
+    ```c
+    // a-0
+    if(fork() == 0){
+        char *cmdargs[] = {"mkdir", "-p", "/home/ariestahrt/modul2/petshop/", NULL};
+        execvp(cmdargs[0], cmdargs);
+    }
+    ```
+- Mengekstrak petshop.zip
+    ```c
+    // a-1
+    if(fork() == 0){
+        char *cmdargs[] = {"unzip", "-q", "/home/ariestahrt/modul2/pets.zip", "-d", "/home/ariestahrt/modul2/petshop/", NULL};
+        execvp(cmdargs[0], cmdargs);
+    }
+    ```
+- Lalu melakukan looping untuk setiap direktori yang ada pada direktori petshop dan menghapus file yang tidak dibutuhkan (yang bukan .jpg)
+    ```c
+    dp = opendir(path);
+    while ((ep = readdir (dp))) {
+        char *ret = strstr(ep->d_name, ".jpg");
+        if(ep->d_type == 4 && !ret && strcmp(ep->d_name, ".")!=0 && strcmp(ep->d_name, "..")!=0){
+            snprintf(temp_path, sizeof temp_path, "%s%s", path, ep->d_name);
+            printf("[x] REMOVE : %s : ", temp_path);
+            if(fork() == 0){
+                char *cmdargs[] = {"rm", "-rf", (char *)temp_path, NULL};
+                execvp(cmdargs[0], cmdargs);
+            }
+
+            pid = wait(&status);
+            waitpid(pid, &status, WUNTRACED);
+            printf("DONE~\n");
+        }
+    }
+    ```
+- Lalu melakukan looping untuk setiap file .jpg yang ditemukan.
+    ```c
+    dp = opendir(path);
+    while ((ep = readdir (dp))) {
+        char *ret = strstr(ep->d_name, ".jpg");
+        if(ret){
+            char temp_master_file_name[100]; strcpy(temp_master_file_name, ep->d_name);
+            char *end_str;
+            char * fname = strtok_r(temp_master_file_name, "_", &end_str);
+
+            while(fname != NULL){
+                printf("[~] %s\n", fname);
+                char temp_file_name[100]; strcpy(temp_file_name,fname);
+                char * end_fname;
+                char * token = strtok_r(temp_file_name, ";", &end_fname);
+                int counter=0;
+
+                char category[100];
+                char pet_name[100];
+                while( token != NULL ) {
+                    if(counter==0){
+                        strcpy(category, token);
+                        snprintf(temp_path, sizeof temp_path, "%s%s", path, token);
+                        printf("\tMKDIR : %s : ", temp_path);
+                        
+                        if(fork() == 0){
+                            char *cmdargs[] = {"mkdir", "-p", (char *)temp_path, NULL};
+                            execvp(cmdargs[0], cmdargs);
+                        }
+
+                        pid = wait(&status);
+                        waitpid(pid, &status, WUNTRACED);
+                        printf("DONE~\n");
+                    }else if(counter==1){
+                        strcpy(pet_name, token);
+
+                        snprintf(temp_path, sizeof temp_path, "%s%s/keterangan.txt", path, category);
+
+                        fptr = fopen(temp_path, "a");
+                        fprintf(fptr, "Nama : %s\n", pet_name);
+                        fclose(fptr);
+
+                        snprintf(temp_path, sizeof temp_path, "%s%s", path, ep->d_name);
+                        snprintf(temp_path2, sizeof temp_path2, "%s%s/%s.jpg", path,category,token);
+                        
+                        printf("\tCP %s %s", temp_path, temp_path2);
+                        
+                        if(fork() == 0){
+                            char *cmdargs[] = {"cp", temp_path, temp_path2, NULL};
+                            execvp(cmdargs[0], cmdargs);
+                        }
+
+                        pid = wait(&status);
+                        waitpid(pid, &status, WUNTRACED);
+                        printf(" DONE~\n");
+                    }else if(counter==2){
+                        char temp_token[100]; strcpy(temp_token, token);
+                        char * is_multi = strstr(ep->d_name, ".jpg");
+                        char umur[10];
+
+                        if(is_multi){
+                            char * umur_ = strtok(temp_token, ".");
+                            strcpy(umur, umur_);
+                        }else{
+                            char * umur_ = strtok(temp_token, "_");
+                            strcpy(umur, umur_);
+                        }
+                        
+                        snprintf(temp_path, sizeof temp_path, "%s%s/keterangan.txt", path, category);
+
+                        fptr = fopen(temp_path, "a");
+                        fprintf(fptr, "Umur : %s\n\n", umur);
+                        fclose(fptr);
+                    }
+
+                    // printf( " %s\n", token ); //printing each token
+                    counter++;
+                    token = strtok_r(NULL, ";", &end_fname);
+                }
+                fname = strtok_r(NULL, "_", &end_str);
+            }
+
+
+            snprintf(temp_path, sizeof temp_path, "%s%s", path, ep->d_name);
+
+            printf("\tRM %s : ", temp_path);
+            
+            if(fork() == 0){
+                char *cmdargs[] = {"rm", temp_path, NULL};
+                execvp(cmdargs[0], cmdargs);
+            }
+
+            pid = wait(&status);
+            waitpid(pid, &status, WUNTRACED);
+            printf("DONE~\n");
+        }
+    }
+    ```
+    Keterangan tambahan: Alur proses yang dilakukan adalah untuk setiap judul file yang dipisahkan oleh spasi (token) -- lalu untuk setiap token akan dipecah setiap ';' untuk counter 0 akan memproses kategori lalu membuat folder, untuk counter 1 akan memproses nama dan mengcopy filenya ke folder kategori, untuk counter 2 yaitu mengisi folder keterangan.txt. Lalu menghapus file yang diproses.
+    
 ## Soal 3
 Pada soal no 3, diminta untuk membuat program C dengan ketentuan sebagai berikut : 
 * Membuat direktori dengan format nama [YYYY-MM-DD_HH:ii:ss] setiap 40 detik
