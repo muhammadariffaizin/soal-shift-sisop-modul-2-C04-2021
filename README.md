@@ -17,7 +17,7 @@ Pada soal no 1 kita diminta untuk membuat program c dengan ketentuan sebagai ber
 * Setelah itu pada 09 April pukul 22.22 WIB, semua folder akan di zip dengan nama Lopyu_Stevany.zip dan semua folder akan di delete(sehingga hanya menyisakan .zip).
 
 Pertama kami disini membuat fungsi `int isDateCorrect(int isPrepare)` sebagai berikut : 
-```c
+```
 time_t my_time;
 struct tm * timeinfo; 
 
@@ -34,7 +34,7 @@ int isDateCorrect(int isPrepare){
 }
 ```
 Fungsi ini digunakan untuk menyiapkan date and time, agar nantinya kami dapat menjalankan otomatis program yang telah kami buat 6 jam sebelum 09 April pukul 22.22 WIB. Kemudian kami membuat fungsi `void execute(char **args)` :  
-```c
+```
 void execute(char **args){
     int pid = fork();
     int status;
@@ -46,7 +46,7 @@ void execute(char **args){
 }
 ```
 Fungsi ini digunakan untuk memudahkan dalam mengeksekusi perintah pada fungsi main yang kami buat. Setelah itu pada fungsi main kami membuat variabel-variabel untuk menyimpan nama folder sesuai format soal, nama file yang telah didownload sesuai format soal, link download dan working direktori. implementasinya dapat dilihat sebagai berikut : 
-```c
+```
     char *folder_name[6] = {"Musyik/", "Pyoto/", "Fylm/"};
     char *folder_unzip[3] = {"MUSIK/", "FOTO/", "FILM/"};
     char *link_donlot[3] = {"https://drive.google.com/uc?id=1FsrAzb9B5ixooGUs0dGiBr-rC7TS9wTD&export=download", "https://drive.google.com/uc?id=1ZG8nRBRPquhYXq_sISdsVcXx5VdEgi-J&export=download", "https://drive.google.com/uc?id=1ktjGgDkL0nNpY-vT7rT7O6ZI47Ke9xcp&export=download"};
@@ -56,7 +56,7 @@ Fungsi ini digunakan untuk memudahkan dalam mengeksekusi perintah pada fungsi ma
     int already_download=0, already_zip_lopyu=0;
 ```
 Kami disini menggunakan daemon process untuk menjalankan program dibackground. 
-```c
+```
     pid_t pid, sid;
     pid = fork();
 
@@ -75,7 +75,7 @@ Kami disini menggunakan daemon process untuk menjalankan program dibackground.
 
 ```
 Kemudian untuk program utama yang diminta pada soal, sebagai berikut : 
-```c
+```
         if(isDateCorrect(1) && already_download==0){ // e
             // a
             for(int i=0; i<3; i++){
@@ -165,7 +165,30 @@ Kami membuat program dengan menggunakan library `dirent.h` untuk melihat file/is
                 }
             }
 ```
-Tujuan pembuatan program menggunakan library `dirent.h` ini agar memudahkan dalam proses pemindahan isi dari suatu direktori ke direktori yang diminta oleh soal. Kemudian jika date dan time sudah 09 April pukul 22.22 WIB dan file Lopyu_Stevany.zip belum ada, maka folder yang telah dibuat (Musyik, Fylm, Pyoto) akan di-zip ke dalam file yang bernama Lopyu_Stevany. Lalu file atau folder selain Lopyu_Stevany.zip akan di delete. Setelah itu, jika proses yang diminta telah berjalan semua maka proses akan berhenti. 
+Tujuan pembuatan program menggunakan library `dirent.h` ini agar memudahkan dalam proses pemindahan isi dari suatu direktori ke direktori yang diminta oleh soal. 
+```
+ if(isDateCorrect(0) && already_zip_lopyu==0){
+            // f
+
+            if(1){
+                char *args[] = { "zip", "-r", "Lopyu_Stevany", folder_name[0], folder_name[1], folder_name[2], NULL };
+                execute(args);
+            }
+
+            if(1){
+                char *args[] = {"rm", "-rf", folder_name[0], folder_name[1], folder_name[2], folder_unzip[0], folder_unzip[1], folder_unzip[2], NULL};
+                execute(args);
+            }
+
+            already_zip_lopyu=1;
+        }
+        
+        if(already_download && already_zip_lopyu){
+            exit(EXIT_FAILURE);
+        }
+        sleep(1);
+```
+Kemudian jika date dan time sudah 09 April pukul 22.22 WIB dan file Lopyu_Stevany.zip belum ada, maka folder yang telah dibuat (Musyik, Fylm, Pyoto) akan di-zip ke dalam file yang bernama Lopyu_Stevany. Lalu file atau folder selain Lopyu_Stevany.zip akan di delete. Setelah itu, jika proses yang diminta telah berjalan semua maka proses akan berhenti.
 ## Soal 2
 
 Pada soal no 2 kita diminta untuk membuat program c dengan ketentuan sebagai berikut: 
